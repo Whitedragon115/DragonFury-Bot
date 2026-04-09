@@ -1,0 +1,26 @@
+{
+  "name": "disbase-v4",
+  "version": "1.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "zip": "node zip.js",
+    "upload": "node upload.js",
+    "dp": "node deploy.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^7.7.0",
+    "archiver": "^7.0.1",
+    "axios": "^1.15.0",
+    "console-log-colors": "^0.5.0",
+    "discord.js": "^14.26.2",
+    "dotenv": "^17.4.1",
+    "prisma": "^7.7.0",
+    "pterodactyl-api-client": "file:../pterodactyl-api-client/pterodactyl-api-client-3.3.1.tgz"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

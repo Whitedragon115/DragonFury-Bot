@@ -1,0 +1,10 @@
+.env
+config.json
+
+/node_modules
+package-lock.json
+
+/zips
+/log
+
+/prisma/migrations
