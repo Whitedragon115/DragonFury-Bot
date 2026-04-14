@@ -19,6 +19,15 @@ module.exports = {
     async execute(interaction, client) {
 
         
+    },
+
+    /**
+     * @param {import('discord.js').AutocompleteInteraction} interaction
+     * @param {import('discord.js').Client} client
+     */
+    async autocomplete(interaction, client) {
+
+        
     }
 };
 `;

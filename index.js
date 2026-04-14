@@ -5,6 +5,7 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const logger = require('./function/log');
+const { getAllocations } = require('./function/prisma');
 
 require('dotenv').config();
 

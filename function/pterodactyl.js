@@ -1,5 +1,6 @@
 const { PterodactylAPIClient } = require('pterodactyl-api-client')
-const { getEgg, getAvailableAllocations, checkAllocations } = require('./prisma')
+const { getEgg, getAvailableAllocations, checkAllocations, getAllocations, getAllocation } = require('./prisma')
+const logger = require('./log')
 
 
 const panel = new PterodactylAPIClient({
@@ -18,10 +19,10 @@ async function allocationCreator(location, node) {
 
     const aliasName = (await panel.node(node).info()).attributes.name.toLowerCase().replace(/\s/g, '')
 
-    for (const port of allocations.toCreate) {
+    if (allocations.toCreate.length > 0) {
         await panel.node(node).allocations.create({
             ip: '0.0.0.0',
-            ports: port,
+            ports: allocations.toCreate.map(port => port.toString()),
             alias: aliasName
         })
     }
@@ -39,11 +40,17 @@ async function allocationCreator(location, node) {
 async function serverCreator(server) {
 
     const egg_details = await getEgg(server.egg)
-    const allocation = await allocationCreator(server.ports, server.node)
+    const preAllocation = await allocationCreator(server.ports, server.node)
+    const allocations = []
 
-    if (!allocation.success) return {
+    for (const port of server.ports) {
+        const alloc = await getAllocations(server.node, port)
+        allocations.push(alloc[0].id)
+    }
+
+    if (!preAllocation.success) return {
         success: false,
-        error: allocation.error
+        error: preAllocation.error
     }
 
     const config = {
@@ -55,20 +62,20 @@ async function serverCreator(server) {
         startup: egg_details.useful.egg_startup,
         environment: egg_details.useful.required_variables,
         limits: {
-            memory: server.ram,
+            memory: server.resources.ram,
             swap: 0,
-            disk: server.disk,
+            disk: server.resources.disk,
             io: 500,
-            cpu: server.cpu
+            cpu: server.resources.cpu
         },
         feature_limits: {
             databases: server.database,
-            allocations: server.ports.length,
+            allocations: server.allocations,
             backups: server.backups
         },
         allocation: {
-            default: server.ports[0],
-            additional: server.ports.slice(1)
+            default: allocations[0],
+            additional: allocations.slice(1)
         }
     }
 
@@ -78,6 +85,7 @@ async function serverCreator(server) {
             serverId: res.attributes
         }
     }).catch(err => {
+        logger.error('Failed to create server:' + err)
         return {
             success: false,
             error: err.response ? err.response.data.errors : err.message
@@ -87,6 +95,14 @@ async function serverCreator(server) {
     return createServer
 }
 
+async function serverDeleter(serverId) {
+
+    const deleteServer = await panel.server({ id: serverId }).delete()
+
+    return deleteServer
+}
+
 module.exports = {
-    serverCreator
+    serverCreator,
+    serverDeleter
 }

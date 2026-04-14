@@ -1,9 +1,11 @@
+require('dotenv').config()
+
 const { PrismaClient } = require('../generated/prisma/client.ts')
 const { PrismaMariaDb } = require('@prisma/adapter-mariadb')
 
 const apdapter = new PrismaMariaDb({
     host: process.env.DATABASE_HOST,
-    port: process.env.DATABASE_PORT,
+    port: Number(process.env.DATABASE_PORT),
     user: process.env.DATABASE_USER,
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME
@@ -58,7 +60,7 @@ async function getAvailableAllocations(ports, node) {
     })
 
     const toCreate = ports.filter(port => !allocations.some(a => a.port === port))
-    const collisions = allocations.filter(a => ports.includes(a.port)).map(a => a.port)
+    const collisions = allocations.filter(a => ports.includes(a.port) && a.server_id)
 
     return {
         toCreate: toCreate,
@@ -124,17 +126,45 @@ async function getNode(id) {
     })
 }
 
-async function getAllocations(node, ports) {
+async function getAllocations(node, port) {
     return await prisma.allocations.findMany({
         where: {
             node_id: node,
-            port: ports
+            port: port
         }
     })
 }
 
 async function getAllocation(id) {
     return await prisma.allocations.findUnique({
+        where: {
+            id: id
+        }
+    })
+}
+
+async function getServers(name, user, allocation) {
+    const filters = []
+
+    if (name) {
+        filters.push({ name: { contains: name } })
+    }
+
+    if (user !== null && user !== undefined) {
+        filters.push({ owner_id: user })
+    }
+
+    if (allocation !== null && allocation !== undefined) {
+        filters.push({ allocations: { some: { id: allocation } } })
+    }
+
+    return await prisma.servers.findMany({
+        where: filters.length > 0 ? { OR: filters } : undefined
+    })
+}
+
+async function getServer(id) {
+    return await prisma.servers.findUnique({
         where: {
             id: id
         }
@@ -151,5 +181,7 @@ module.exports = {
     getNodes,
     getNode,
     getAllocations,
-    getAllocation
+    getAllocation,
+    getServers,
+    getServer
 }

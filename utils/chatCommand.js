@@ -2,27 +2,27 @@ const { Events } = require('discord.js');
 
 module.exports = {
     name: Events.MessageCreate,
-
-    /**
-     * 
-     * @param {import('discord.js').Message} message 
-     * @param {import('discord.js').Client} client 
-     */
-
     async execute(message, client) {
-        const commandRegex = /^\[.*\]$/;
 
+        const sender = message.guild.members.cache.get(message.author.id);
+        const msg = message.content;
+
+        const commandRegex = /^\[(.+)\]$/;
+
+        if (!commandRegex.test(msg)) return;
         if (message.author.bot) return;
-        if (!commandRegex.test(message.content)) return;
-        const commandName = message.content.slice(1, -1).trim().toLowerCase().split(' ');
-        const cmd = commandName.shift();
+        if (message.channel.type === 'DM') return;
+        if (!sender.roles.cache.some((rl) => rl.id == AdminRole)) return;
+        const command = msg.match(commandRegex)[1].toLowerCase();
+        const args = command.split(' ').slice(1);
 
-        switch (cmd) {
-            case 'Example':
-                return someFunction()
+        switch (command) {
+            case 'ping':
+                message.reply(`Pong! my ping to discord is ${message.createdTimestamp - Date.now()}ms.`);
+                break;
             default:
-                return;
+                
         }
 
-    }
-}
+    },
+};
